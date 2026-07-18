@@ -1,0 +1,6 @@
+{
+  "name": "Patin Deck Admin Services",
+  "description": "Un panel de administración y simulador fuera de línea para gestionar suscripciones de clientes con alertas de vencimiento.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
