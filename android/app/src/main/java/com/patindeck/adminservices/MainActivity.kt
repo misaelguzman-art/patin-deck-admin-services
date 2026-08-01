@@ -683,3 +683,45 @@ fun AddSubscriptionDialog(
         }
     )
 }
+
+suspend fun exportClientsToUri(
+    context: Context,
+    uri: Uri,
+    clientsList: List<ClientWithSubscriptions>,
+    viewModel: AppViewModel
+) {
+    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        try {
+            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                // Escribir BOM para que Excel detecte UTF-8 correctamente
+                outputStream.write(byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()))
+                
+                val writer = java.io.OutputStreamWriter(outputStream, "UTF-8")
+                
+                // Escribir encabezados
+                writer.append("ID Cliente;Nombre;Teléfono;Servicio;Correo;Fecha Inicio;Fecha Fin;Duración (Meses);Estado\n")
+                
+                for (item in clientsList) {
+                    val client = item.client
+                    if (item.subscriptions.isEmpty()) {
+                        writer.append("${client.clientId};${client.name};${client.phone};;;;;;\n")
+                    } else {
+                        for (sub in item.subscriptions) {
+                            val status = viewModel.getSubscriptionStatus(sub.endDate).name
+                            writer.append("${client.clientId};${client.name};${client.phone};${sub.serviceName};${sub.email};${sub.startDate};${sub.endDate};${sub.monthsDuration};$status\n")
+                        }
+                    }
+                }
+                writer.flush()
+            }
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                Toast.makeText(context, "Archivo exportado exitosamente", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                Toast.makeText(context, "Error al exportar archivo", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+}
