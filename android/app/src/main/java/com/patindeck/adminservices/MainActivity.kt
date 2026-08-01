@@ -1,8 +1,13 @@
 package com.patindeck.adminservices
 
 import android.os.Bundle
+import android.content.Context
+import android.net.Uri
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -18,6 +23,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -66,6 +72,20 @@ fun DashboardScreen(viewModel: AppViewModel) {
     var selectedClientForSub by remember { mutableStateOf<Client?>(null) }
     var searchQuery by remember { mutableStateOf("") }
 
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv"),
+        onResult = { uri ->
+            if (uri != null) {
+                coroutineScope.launch {
+                    exportClientsToUri(context, uri, clientsList, viewModel)
+                }
+            }
+        }
+    )
+
     // Calcular estadísticas para las tarjetas superiores
     var totalClients = clientsList.size
     var activeCount = 0
@@ -100,6 +120,13 @@ fun DashboardScreen(viewModel: AppViewModel) {
                             color = Color.White,
                             fontSize = 20.sp
                         )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { 
+                        createDocumentLauncher.launch("clientes_patindeck.csv") 
+                    }) {
+                        Icon(imageVector = Icons.Default.Download, contentDescription = "Exportar a Excel")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
